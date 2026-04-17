@@ -254,7 +254,7 @@ class ParamHandlerVGTools(vg.ParamHandler):
             )
         )
 
-        vgt.OVERLAP_OPERATION = self._safe_kwd_str("operation", default="multiply")
+        vgt.OVERLAP_OPERATION = self._safe_get_param_kwd("operation", default="multiply")
 
 
     # --------------------------------------------------------------------------
