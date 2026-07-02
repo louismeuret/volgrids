@@ -3,9 +3,6 @@ from ._core.traj_multiprocess import TrajMultiprocess
 from ._core.cavity_finder import CavityFinder
 from ._core.trimmer import Trimmer
 
-from ._parsers.resname_standard import ResnameStandard
-from ._parsers.parser_chem_table import ParserChemTable
-
 from ._smifs import _core as _smifs_core
 from ._smifs._core import Smif
 from ._smifs.apbs import SmifAPBS
@@ -14,6 +11,9 @@ from ._smifs.hbdonors import SmifHBDonors
 from ._smifs.hydrophilic import SmifHydrophilic
 from ._smifs.hydrophobic import SmifHydrophobic
 from ._smifs.stacking import SmifStacking
+
+from ._parsers.resname_standard import ResnameStandard
+from ._parsers.parser_chem_table import ParserChemTable
 
 from .app_smiffer import AppSmiffer
 

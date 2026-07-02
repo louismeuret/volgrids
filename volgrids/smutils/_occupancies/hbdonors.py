@@ -19,7 +19,7 @@ class OgHBDonors(smf._smifs_core.SmifHBonds):
     # --------------------------------------------------------------------------
     def find_tail_head_positions(self, triplet: smf._smifs_core.Triplet) -> None:
         ### OGs only use head position (donor site) --> no tail position needed
-        triplet.set_pos_head(self.res_atoms)
+        triplet.set_pos_head()
 
     # --------------------------------------------------------------------------
     def populate_grid(self, grid: vg.Grid) -> None:

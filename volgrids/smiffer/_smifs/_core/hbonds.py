@@ -12,11 +12,9 @@ class SmifHBonds(Smif, ABC):
         super().__init__(mm)
         self.kernel: vg.KernelGaussianBivariateAngleDist = None
         self.hbond_getter: callable
-        self.all_atoms = self.mm.get_atoms_insphere()
-        print(f"{len(self.all_atoms)} atoms"); exit(42) # [WIP]
-
-        self.res_atoms = None
-        self.processed_interactors = set()
+        self.atoms = self.mm.get_atoms_insphere()
+        self.chains = self.atoms.split_chains()
+        self.processed_interactors: set[str] = set()
 
 
     # --------------------------------------------------------------------------
@@ -53,34 +51,28 @@ class SmifHBonds(Smif, ABC):
 
     # --------------------------------------------------------------------------
     def _iter_triplets(self):
-        for res in self.all_atoms.residues: # [TODO] remove MDA
-            hbond_tuples = self.hbond_getter(self.mm.chemtable, res.resname)
-            if hbond_tuples is None: continue # skip weird residues
+        for chain in self.chains:
+            residues = chain.split_residues()
 
-            self.processed_interactors.clear()
+            for i,res in enumerate(residues):
+                resname = res[0].resname
+                triplets: list[Triplet]|None = self.hbond_getter(self.mm.chemtable, resname)
+                if triplets is None: continue # skip weird residues
 
-            for hbond_tuple in hbond_tuples:
-                if not hbond_tuple: continue  # skip residues without HBond pairs
+                self.processed_interactors.clear()
 
-                triplet = Triplet(res, *hbond_tuple)
-                if not self.can_be_interactor(triplet): continue
+                for triplet in triplets:
+                    res_prev = residues[i-1] if i > 0 else None
+                    res_next = residues[i+1] if i < len(residues)-1 else None
+                    triplet.resname = resname
+                    triplet.residue_prev = res_prev
+                    triplet.residue_this = res
+                    triplet.residue_next = res_next
 
-                #### [WIP] 05) residue handling, shouldn't be problematic
-                self.res_atoms = self.all_atoms.select_atoms(triplet.str_this_res) # [TODO] remove MDA
-                triplet.set_pos_interactor(self.res_atoms)
-                yield triplet
+                    if not self.can_be_interactor(triplet): continue
 
-
-    # ------------------------------------------------------------------------------
-    def _has_prev_res(self, triplet: Triplet) -> bool:
-        #### [WIP] 05) residue handling, shouldn't be problematic
-        return len(self.all_atoms.select_atoms(triplet.str_prev_res)) > 0 # [TODO] remove MDA
-
-
-    # ------------------------------------------------------------------------------
-    def _has_next_res(self, triplet: Triplet) -> bool:
-        #### [WIP] 05) residue handling, shouldn't be problematic
-        return len(self.all_atoms.select_atoms(triplet.str_next_res)) > 0 # [TODO] remove MDA
+                    triplet.set_pos_interactor()
+                    yield triplet
 
 
 # //////////////////////////////////////////////////////////////////////////////

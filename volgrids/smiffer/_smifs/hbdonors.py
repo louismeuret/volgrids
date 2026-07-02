@@ -25,14 +25,14 @@ class SmifHBDonors(SmifHBonds):
     def can_be_interactor(self, triplet: Triplet) -> bool:
         if smf.ResnameStandard.is_prot(triplet.resname):
             if triplet.resname == "PRO": # donor only if there is no previous residue
-                return not self._has_prev_res(triplet)
+                return not triplet.has_prev_res()
 
         if smf.ResnameStandard.is_nucleic(triplet.resname):
             if triplet.interactor == "O3'": # donor only if there is no next residue
-                return not self._has_next_res(triplet)
+                return not triplet.has_next_res()
 
             if triplet.interactor == "O5'": # donor only if there is no previous residue
-                return not self._has_prev_res(triplet)
+                return not triplet.has_prev_res()
 
         return True # all other cases can be interactors
 
@@ -42,30 +42,27 @@ class SmifHBDonors(SmifHBonds):
         if triplet.pos_head is not None: # head position is already set for succesful vg.CFG.smif_use_hydrogens iterations
             return
 
-        triplet.set_pos_head(self.res_atoms)
+        triplet.set_pos_head()
 
         ############################### TAIL POSITION
         ### special cases for protein
         if smf.ResnameStandard.is_prot(triplet.resname):
             if triplet.interactor == "N": # tail points are in different residues
-                if self._has_prev_res(triplet):
+                if triplet.has_prev_res():
                     triplet.set_pos_tail_custom( # N of peptide bond
-                        atoms = self.all_atoms,
-                        query_t0 = triplet.str_prev_res,
-                        query_t1 = triplet.str_this_res
+                        triplet.residue_prev,
+                        triplet.residue_this,
                     )
                     self.kernel = self._kernel_hbd_fixed
                     return
 
-                triplet.set_pos_tail_custom( # N of N-terminus
-                    atoms = self.all_atoms,
-                    query_t0 = f"{triplet.str_this_res} and name CA",
-                    query_t1 = f"{triplet.str_this_res} and name CA"
+                triplet.set_pos_tail( # N of N-terminus
+                    tail_override = ("CA",) # usually tail is (C,CA) but here it needs to be overriden to only (CA,)
                 )
                 self.kernel = self._get_relevant_kernel(triplet)
                 return
 
-        triplet.set_pos_tail(self.res_atoms)
+        triplet.set_pos_tail()
 
 
     # --------------------------------------------------------------------------
@@ -77,7 +74,7 @@ class SmifHBDonors(SmifHBonds):
             if triplet.interactor in self.processed_interactors: continue
 
             if vg.CFG.smif_use_hydrogens:
-                for hydrogen in triplet.get_interactor_bonded_hydrogens(self.res_atoms):
+                for hydrogen in triplet.get_interactor_bonded_hydrogens(triplet.residue_this):
                     triplet.pos_tail = triplet.pos_interactor
                     triplet.pos_head = hydrogen.position
                     self.kernel = self._kernel_hbd_fixed
@@ -106,15 +103,15 @@ class SmifHBDonors(SmifHBonds):
             return
 
         try:
-            u = mda.Merge(self.all_atoms, hydrogens) # temporary universe that excludes any unwanted atoms (like ions with undefined vdw radii)...
+            u = mda.Merge(self.atoms, hydrogens) # temporary universe that excludes any unwanted atoms (like ions with undefined vdw radii)...
             u.guess_TopologyAttrs(to_guess = ["bonds"]) # ... so that there are no problems with the bond guessing
         except (ValueError, AttributeError):
             warnings.warn("MDAnalysis could not guess bonds for hydrogens. Falling back to non-hydrogen model for H-bond donors.")
             vg.CFG.smif_use_hydrogens = False
             return
 
-        ### the bonds are contained in these newly defined atomgroup, so update the all_atoms reference
-        self.all_atoms = u.atoms
+        ### the bonds are contained in these newly defined atomgroup, so update the atoms reference
+        self.atoms = u.atoms
 
 
 # //////////////////////////////////////////////////////////////////////////////
