@@ -45,7 +45,12 @@ class MoleculeManager:
 
         self.chemtable = self._init_chemtable()
 
-        self.init_atoms(path_struct)
+        if path_struct.suffix.lower() in (".pdb", ".pqr"):
+            self.init_atoms_pdb(path_struct)
+        else: # use MDAnalysis to read other formats (e.g. .gro)
+            u = vg.Utils.create_mda_universe_quiet(path_struct)
+            self.atoms_all = ms.ParticleGroup([])
+            self.atoms_all.set_positions(u.coord.positions)
 
         self.frame = 0
         if self.do_traj:
@@ -66,11 +71,13 @@ class MoleculeManager:
 
 
     # --------------------------------------------------------------------------
-    def init_atoms(self, path_struct: Path, chains: list[str] = None):
+    def init_atoms_pdb(self, path_struct: Path, chains: list[str] = None):
         """Can add back the `chains` information that is empty in PQR files. `chains` should be of size (nresidues,)."""
 
         ###### PART 0: read the structure and standardize residue names
-        self.atoms_all = ms.System.read_pdb(path_struct).particles # in the case of multiple models: `System.atoms_all` is the first model
+        ### note that in the case of multiple models `System.particles` is always the first model
+        ### so `self.atoms_all` shouldn't be concerned with multiple-models PDBs or with altlocs
+        self.atoms_all = ms.System.read_pdb(path_struct).particles.select_first_altloc()
         smf.ResnameStandard.standardize_particle_group(self.atoms_all)
 
 

@@ -275,7 +275,7 @@ class AppSmiffer(vg.AppSubcommand):
         with tempfile.NamedTemporaryFile(mode = "w+", suffix = ".pqr", delete = True) as tmp_pqr:
             tmp_pqr.write(vg.TMP_APBS_CONTENT_PQR)
             tmp_pqr.flush()
-            self.mm.init_atoms(tmp_pqr.name, chains = chains) # re-initialize the atoms with the PQR content (which may have added hydrogens)
+            self.mm.init_atoms_pdb(tmp_pqr.name, chains = chains) # re-initialize the atoms with the PQR content (which may have added hydrogens)
 
         ### [NOTE] consider that adding extra atoms could mean that the boxes might need to be recalculated
 

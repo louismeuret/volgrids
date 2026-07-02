@@ -3,7 +3,6 @@
 <!-- ----------------------------------------------------------------------- -->
 ## General
 * Add annotations, docstrings and overall cleaning
-* use MDAnalysis as fallback for other molecular formats.
 * remove the dependency to `gridData` in `grid_io.py`
     * use the [mrcfile](https://mrcfile.readthedocs.io/en/stable/) library directly for handling MRC/CCP4 files.
     * DX parser (read) could be manually implemented.
@@ -14,8 +13,7 @@
 <!-- ----------------------------------------------------------------------- -->
 ## VolGrids
 * replace `OUT_WARNING_NPOINTS` with a better alternative.
-* generalize the usage of the `-c` flag (for customazing configurations) in all modes.
-* add explanations to the list of configs printed with the empty `-c` flag
+* generalize the usage of the `-c` flag (for customizing configurations) in all modes.
 * implement: raise an error if a format file is opened with the wrong function
 * add tests for parameters being directly passed to the App classes (instead of parsing the CLI arguments)
 * check if the implementation of the `OUT_OVERWRITE_OK` flag is user-convenient
@@ -24,7 +22,6 @@
 
 <!-- ----------------------------------------------------------------------- -->
 ## SMIFFER
-* use molsimple to filter out altlocs.
 * validate the INI headers when parsing a user's provided chem table
 * RNDS trimming could be removed. instead of it, a post-processing with a similar (and probably better) effect could be done with SMIF segmentation.
 * change the ligand example to one that uses both HBACCEPTORS, HBDONORS and NAMES_HBD_FIXED
