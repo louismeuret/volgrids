@@ -3,12 +3,9 @@
 <!-- ----------------------------------------------------------------------- -->
 ## General
 * Add annotations, docstrings and overall cleaning
-* Start replacing mdanalysis with another PDB parser
-    * its overhead can be avoided if just simple PDB parsing is required.
-        * keep using MDAnalysis for trajectory files, as well as fallback for other molecular formats.
-    * remove the dependency to `gridData` in `grid_io.py`
-        * use the [mrcfile](https://mrcfile.readthedocs.io/en/stable/) library directly for handling MRC/CCP4 files.
-        * DX parser (read) could be manually implemented.
+* remove the dependency to `gridData` in `grid_io.py`
+    * use the [mrcfile](https://mrcfile.readthedocs.io/en/stable/) library directly for handling MRC/CCP4 files.
+    * DX parser (read) could be manually implemented.
 * refactor some of the inheritance in SMIF classes (specially for HBonds).
 * further improve the calls to `AppMain.load_configs`?
 
@@ -16,8 +13,7 @@
 <!-- ----------------------------------------------------------------------- -->
 ## VolGrids
 * replace `OUT_WARNING_NPOINTS` with a better alternative.
-* generalize the usage of the `-c` flag (for customazing configurations) in all modes.
-* add explanations to the list of configs printed with the empty `-c` flag
+* generalize the usage of the `-c` flag (for customizing configurations) in all modes.
 * implement: raise an error if a format file is opened with the wrong function
 * add tests for parameters being directly passed to the App classes (instead of parsing the CLI arguments)
 * check if the implementation of the `OUT_OVERWRITE_OK` flag is user-convenient

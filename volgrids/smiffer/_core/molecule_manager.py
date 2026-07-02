@@ -1,4 +1,3 @@
-import tempfile
 import warnings
 import numpy as np
 from pathlib import Path
@@ -6,27 +5,34 @@ from pathlib import Path
 import volgrids as vg
 import volgrids.smiffer as smf
 from volgrids._vendors import freyacli as fy
+from volgrids._vendors import molsimple as ms
 
 # //////////////////////////////////////////////////////////////////////////////
 class MoleculeManager:
     """Manages the molecular system, including the structure, (optional) trajectory, enclosing box, chemtable and selection queries."""
 
     # --------------------------------------------------------------------------
-    def __init__(self, path_struct: Path, path_traj: Path = None, box: vg.Box = None):
-        import MDAnalysis as mda
+    def __init__(self, path_struct: Path, path_traj: Path = None):
 
-        self.molname   : str                # name of the molecule
-        self.frame     : int|None           # current frame number (if trajectory is used)
-        self.nframes   : int                # total number of frames in the trajectory (1 if no trajectory is used)
-        self.box       : vg.Box             # current box (either enforced, sphere-based, or computed from the structure)
-        self.box_common: vg.Box|None        # box that can enclose all frames of a trajectory
-        self.chemtable : smf.ParserChemTable
+        self.molname  : str                # name of the molecule
+        self.chemtable: smf.ParserChemTable
+
+        self.atoms_all: ms.ParticleGroup # all atoms in the molecular system, without any filtering (e.g. selection query, sphere, etc.)
+        self.atoms_filter_trim: ms.ParticleGroup # atoms from the requested resname (from the chemtable) and with no hydrogens, to be used by Trimmer
+        self.atoms_filter_smif: ms.ParticleGroup # same as `atoms_filter_trim` but further filtered to only include atoms part of the optional explicit filtering of custom residues (from the CLI)
+
+        self.frame    : int  # current frame number
+        self.nframes  : int  # total number of frames in the trajectory (1 if no trajectory is used)
+        self._mda_traj: None # MDAnalysis Universe object for trajectories (None if no trajectory is used)
+
+        self.box       : vg.Box      # current box (either enforced, sphere-based, or computed from the structure)
+        self.box_common: vg.Box|None # box that can enclose all frames of a trajectory
+
         self.do_traj            : bool # whether this is a trajectory or a single structure (None if no structure is provided)
         self.do_use_sphere      : bool
         self.do_enforce_boxes   : bool
         self.do_use_common_box  : bool
         self.enforce_cmap_output: bool
-        self._mda_universe: mda.Universe|None  # MDAnalysis Universe object for the molecular system
 
         self.molname = path_struct.stem
 
@@ -39,11 +45,20 @@ class MoleculeManager:
 
         self.chemtable = self._init_chemtable()
 
-        self._mda_universe = vg.Utils.create_mda_universe_quiet(path_struct, path_traj)
-        smf.ResnameStandard.standardize_mda_universe(self._mda_universe)
+        if path_struct.suffix.lower() in (".pdb", ".pqr"):
+            self.init_atoms_pdb(path_struct)
+        else: # use MDAnalysis to read other formats (e.g. .gro)
+            u = vg.Utils.create_mda_universe_quiet(path_struct)
+            self.atoms_all = ms.ParticleGroup([])
+            self.atoms_all.set_positions(u.coord.positions)
 
-        self.frame = 0 if self.do_traj else None
-        self.nframes = self._mda_universe.trajectory.n_frames if self.do_traj else 1
+        self.frame = 0
+        if self.do_traj:
+            self._mda_traj = vg.Utils.create_mda_universe_quiet(path_struct, path_traj)
+            self.nframes = self._mda_traj.trajectory.n_frames
+        else:
+            self._mda_traj = None
+            self.nframes = 1
 
         if self.do_use_sphere:
             vg.SphereInfo.assert_sphere_infos(smf.SPHERES, self.nframes)
@@ -52,54 +67,55 @@ class MoleculeManager:
             vg.BoxInfo.assert_box_infos([box.info for box in smf.BOXES_ENFORCED], self.nframes)
 
         self.box_common = self._gen_box_common() if self.do_use_common_box else None
-        self.box = self._get_current_box() if box is None else box
+        self.box = self._get_current_box()
 
 
     # --------------------------------------------------------------------------
-    @classmethod
-    def from_pqr_data(cls, pqr_data: str, box: vg.Box = None, chains: list[str] = None):
-        """Adds back the `chains` information that is empty in the PQR file. `chains` should be of size (nresidues,)."""
-        if not pqr_data:
-            raise ValueError("Empty PQR content, aborting MoleculeManager instantiation.")
+    def init_atoms_pdb(self, path_struct: Path, chains: list[str] = None):
+        """Can add back the `chains` information that is empty in PQR files. `chains` should be of size (nresidues,)."""
 
-        with tempfile.NamedTemporaryFile(mode = "w+", suffix = ".pqr", delete = True) as tmp_pqr:
-            tmp_pqr.write(pqr_data)
-            tmp_pqr.flush()
-            obj = cls(Path(tmp_pqr.name), path_traj = None, box = box)
-
-        ### add back the chain information
-        if chains is None:
-            chains = ['A'] * len(obj._mda_universe.residues)
-
-        chains_per_atom = [
-            chains[i]
-            for i,residue in enumerate(obj._mda_universe.residues)
-            for _ in residue.atoms
-        ]
-
-        obj._mda_universe.add_TopologyAttr("chainIDs", chains_per_atom)
-        return obj
+        ###### PART 0: read the structure and standardize residue names
+        ### note that in the case of multiple models `System.particles` is always the first model
+        ### so `self.atoms_all` shouldn't be concerned with multiple-models PDBs or with altlocs
+        self.atoms_all = ms.System.read_pdb(path_struct).particles.select_first_altloc()
+        smf.ResnameStandard.standardize_particle_group(self.atoms_all)
 
 
-    # --------------------------------------------------------------------------
-    @staticmethod
-    def copy_attrs_except_universe(src: "MoleculeManager", dst: "MoleculeManager"):
-        ### [TODO]: rework this method? it's easy to forget to add new attributes here when adding them to the class
-        dst.molname    = src.molname
-        dst.do_traj    = src.do_traj
-        dst.frame      = src.frame
-        dst.box        = src.box
-        dst.box_common = src.box_common
-        dst.chemtable  = src.chemtable
-        dst.do_use_sphere       = src.do_use_sphere
-        dst.do_enforce_boxes    = src.do_enforce_boxes
-        dst.do_use_common_box   = src.do_use_common_box
-        dst.enforce_cmap_output = src.enforce_cmap_output
+        ###### PART 1: re-assign chain information if needed (e.g. when reloading atoms from a PQR file that has no chain information)
+        if chains is not None:
+            residues = self.atoms_all.split_residues()
+            chains_per_atom = [
+                chains[i] for i,residue in enumerate(residues) for _ in residue
+            ]
+            self.atoms_all.set_chainids(chains_per_atom)
+
+
+        ###### PART 2: initialize self.atoms_filter_trim
+        self.atoms_filter_trim = self.atoms_all\
+            .select_resname(*self.chemtable.resnames)\
+            .select_non_hydrogens()
+
+
+        ###### PART 3: initialize self.atoms_filter_smif
+        self.atoms_filter_smif = self.atoms_filter_trim
+
+        if smf.CUSTOM_RESIDUES:
+            chainresids = (ms.ChainResid.from_dotstr(s) for s in smf.CUSTOM_RESIDUES.split())
+            self.atoms_filter_smif = self.atoms_filter_smif.select_chain_resid(*chainresids)
+
+        if len(self.atoms_filter_smif) == 0: warnings.warn(
+            f"\n\n... {fy.Color.red('Empty atom selection')}."
+        )
 
 
     # --------------------------------------------------------------------------
     def switch_frame(self, frame_idx: int):
-        self._mda_universe.trajectory[frame_idx]
+        if self.do_traj:
+            ### when dealing with trajectories, simply update atoms_all with the coordinates of the current frame (MDA is used here)
+            ### the other "atoms_" attributes will also have their positions updated, as they are simply views of atoms_all (with the same particles instances)
+            self._mda_traj.trajectory[frame_idx]
+            self.atoms_all.set_positions(self._mda_traj.coord.positions)
+
         self.frame = frame_idx
         self.box = self._get_current_box()
 
@@ -114,59 +130,33 @@ class MoleculeManager:
 
 
     # --------------------------------------------------------------------------
-    def get_all_atoms(self):
-        """Returns all atoms in the molecular system, without any filtering (e.g. selection query, sphere, etc.)."""
-        return self._mda_universe.atoms
-
-
-    # --------------------------------------------------------------------------
-    def get_all_queried_atoms(self, use_custom = True):
-        """Returns all atoms that match the selection query, without any additional filtering (e.g. sphere)."""
-        query = self.chemtable.get_selection_query(use_custom)
-        atoms = self._mda_universe.select_atoms(query)
-        if len(atoms) == 0: warnings.warn(
-            f"\n\n... The selection query '{fy.Color.blue(query)}' {fy.Color.red('did not return any atoms')}."
-        )
-        return atoms
-
-
-    # --------------------------------------------------------------------------
-    def get_relevant_queried_atoms(self, use_custom = True, extra_dist: float = 0.0):
-        """Returns all atoms that match the selection query, with additional filtering (e.g. sphere)."""
-        query = self.chemtable.get_selection_query(use_custom)
+    def get_atoms_insphere(self, extra_dist: float = 0.0) -> "ms.ParticleGroup":
+        """
+        Same as `atoms_filter_smif` but further filtered to only include atoms inside an (optional) sphere.
+        It must be calculated at every frame if the sphere is moving (e.g. when using a trajectory).
+        """
+        atoms = self.atoms_filter_smif
         if self.do_use_sphere:
-            sphere = smf.SPHERES[self.frame or 0]
-            query += f"and point {sphere.get_str_query(extra_dist)}"
-
-        atoms = self._mda_universe.select_atoms(query)
-        if len(atoms) == 0: warnings.warn(
-            f"\n\n... The selection query '{fy.Color.blue(query)}' {fy.Color.red('did not return any atoms')}."
-        )
+            sphere = smf.SPHERES[self.frame]
+            atoms = sphere.filter_particles(atoms, extra_dist)
         return atoms
-
-
-    # --------------------------------------------------------------------------
-    def get_hydrogens(self):
-        return self._mda_universe.select_atoms("not water and name H*")
 
 
     # --------------------------------------------------------------------------
     def get_residue_chains(self) -> list[str]:
-        """Returns a list of chain IDs for each residue in the molecular system."""
-        return [
-            arr[0] for arr in self._mda_universe.residues.chainIDs
-        ] # size: (nresidues,)
+        """Returns a list of chain IDs for each residue in the molecular system, size: (nresidues,)"""
+        return [residue[0].chainid for residue in self.atoms_all.split_residues()]
 
 
     # --------------------------------------------------------------------------
     def _get_current_box(self) -> vg.Box:
         ### Priority 1: Box to be used is specifically requested by the user (via CLI)
         if self.do_enforce_boxes:
-            return smf.BOXES_ENFORCED[self.frame or 0]
+            return smf.BOXES_ENFORCED[self.frame]
 
         ### Priority 2: Box to be used is based on a user-provided sphere (via CLI)
         if self.do_use_sphere:
-            sphere = smf.SPHERES[self.frame or 0]
+            sphere = smf.SPHERES[self.frame]
             box = vg.Box(None, None, None, do_init = False)
             box.cog = np.array(sphere.get_pos())
             box.min_coords = box.cog - sphere.radius
@@ -179,12 +169,18 @@ class MoleculeManager:
         ### Priority 3: dealing with a trajectory and the user requested the box
         ### to be inferred from the structure at every frame (via config `BOX_TIGHT_TRAJ=True`)
         if not self.do_use_common_box:
-            min_coords = self._mda_universe.coord.positions.min(axis = 0)
-            max_coords = self._mda_universe.coord.positions.max(axis = 0)
-            return self._padded_box(min_coords, max_coords)
+            return self._gen_box()
 
         ### Priority 4 (default): a common box that can enclose the structure in all frames is used (via config `BOX_TIGHT_TRAJ=False`)
         return self.box_common
+
+
+    # --------------------------------------------------------------------------
+    def _gen_box(self) -> vg.Box:
+        positions  = self.atoms_filter_smif.get_positions_numpy()
+        min_coords = positions.min(axis = 0)
+        max_coords = positions.max(axis = 0)
+        return self._padded_box(min_coords, max_coords)
 
 
     # --------------------------------------------------------------------------
@@ -195,11 +191,11 @@ class MoleculeManager:
         """
         min_coords = np.full(3,  np.inf)
         max_coords = np.full(3, -np.inf)
-        for _ in self._mda_universe.trajectory:
-            positions = self._mda_universe.coord.positions
+        for _ in self._mda_traj.trajectory:
+            positions = self._mda_traj.coord.positions
             np.minimum(min_coords, positions.min(axis = 0), out = min_coords)
             np.maximum(max_coords, positions.max(axis = 0), out = max_coords)
-        self._mda_universe.trajectory[0] # rewind to frame 0
+        self._mda_traj.trajectory[0] # rewind to frame 0
         return self._padded_box(min_coords, max_coords)
 
 

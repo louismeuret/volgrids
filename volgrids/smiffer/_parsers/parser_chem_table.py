@@ -1,31 +1,21 @@
 import volgrids as vg
+import volgrids._vendors.molsimple as ms
 import volgrids.smiffer as smf
 
 # //////////////////////////////////////////////////////////////////////////////
 class ParserChemTable:
     def __init__(self, path_table):
-        self._selection_query: str = ''
-        self._selection_query_custom: str = ''
+        self.resnames: list[str] = []
         self._parser_ini = vg.ParserIni.from_file(path_table)
         self._atoms_hphob: dict[str, dict[str, float]] = {}
         self._names_stk: dict[str, list[str]] = {}
-        self._names_hba: dict[str, list[tuple[str, str, str, bool]]] = {}
-        self._names_hbd: dict[str, list[tuple[str, str, str, bool]]] = {}
+        self._names_hba: dict[str, list[smf._smifs_core.Triplet]] = {}
+        self._names_hbd: dict[str, list[smf._smifs_core.Triplet]] = {}
         self._parse_table()
 
 
     # --------------------------------------------------------------------------
-    def get_selection_query(self, use_custom):
-        """
-        Custom query includes an additional condition to select only the residues specified in the `CUSTOM_RESIDUES` parameter.
-        Otherwise, the standard query is returned (i.e. that one specified in the .chem table), which does not filter by residue.
-        The distinction is needed because SMIFs are to be computed only for the specified residues, but trimming needs to consider all residues.
-        """
-        return self._selection_query_custom if use_custom else self._selection_query
-
-
-    # --------------------------------------------------------------------------
-    def get_atom_hphob(self, atom):
+    def get_atom_hphob(self, atom: ms.Particle) -> float | None:
         dict_resid = self._atoms_hphob.get(atom.resname)
         if dict_resid is None: return None
         return dict_resid.get(atom.name)
@@ -37,12 +27,12 @@ class ParserChemTable:
 
 
     # --------------------------------------------------------------------------
-    def get_names_hba(self, resname: str):
+    def get_names_hba(self, resname: str) -> list[smf._smifs_core.Triplet] | None:
         return self._names_hba.get(resname)
 
 
     # --------------------------------------------------------------------------
-    def get_names_hbd(self, resname: str):
+    def get_names_hbd(self, resname: str) -> list[smf._smifs_core.Triplet] | None:
         return self._names_hbd.get(resname)
 
 
@@ -69,8 +59,8 @@ class ParserChemTable:
     # --------------------------------------------------------------------------
     def parse_names_hbacceptors(self, data_ini: vg.ParserIni):
         for resname, str_triplets in data_ini.iter_splitted_lines("HBACCEPTORS", sep = ':'):
-            triplets = map(self._parse_atoms_triplet, str_triplets.split())
-            self._names_hba[resname] = [(hba,tail,head,False) for hba,tail,head,_ in triplets] # hbond_fixed must always be False for HBAcceptors
+            triplets = list(map(self._parse_atoms_triplet, str_triplets.split()))
+            self._names_hba[resname] = triplets
 
 
     # --------------------------------------------------------------------------
@@ -88,20 +78,9 @@ class ParserChemTable:
         """
 
         ### extract values from the lines
-        lst = self._parser_ini.get("RESIDUE_NAMES")
-        if lst is None: raise ValueError("No selection query found in the table file.")
-        resnames = lst[0]
-
-        self._selection_query = f"resname {resnames} and not (name H*)"
-        self._selection_query_custom = self._selection_query
-
-        if smf.CUSTOM_RESIDUES:
-            self._selection_query_custom += " and ("
-            for residue in smf.CUSTOM_RESIDUES.split():
-                chain, resid = residue.split('.')
-                self._selection_query_custom += f"(chainID {chain} and resid {resid}) or "
-            self._selection_query_custom =\
-                self._selection_query_custom[:-4] + ")" # remove the last " or "
+        lst_resnames = self._parser_ini.get("RESIDUE_NAMES")
+        if lst_resnames is None: raise ValueError("No selection query found in the table file.")
+        self.resnames = lst_resnames[0].split()
 
         self.parse_atom_hphobicity  (self._parser_ini)
         self.parse_names_stacking   (self._parser_ini)
@@ -111,7 +90,7 @@ class ParserChemTable:
 
     # --------------------------------------------------------------------------
     @staticmethod
-    def _parse_atoms_triplet(triplet: str) -> tuple[str, str, str, str, bool]:
+    def _parse_atoms_triplet(triplet: str) -> smf._smifs_core.Triplet:
         def _assert(condition: bool):
             assert condition, \
                 f"Triplet '{triplet}' is not in the expected formats 'I=T->H' or 'I=T0.T1->H'."
@@ -138,7 +117,7 @@ class ParserChemTable:
         tail_points = tail.split('.')
         _assert(len(tail_points) > 0 and all(tail_points))
 
-        return interactor, tail_points, head, hbond_fixed
+        return smf._smifs_core.Triplet(interactor, tail_points, head, hbond_fixed)
 
 
 # //////////////////////////////////////////////////////////////////////////////
