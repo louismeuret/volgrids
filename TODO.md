@@ -3,12 +3,10 @@
 <!-- ----------------------------------------------------------------------- -->
 ## General
 * Add annotations, docstrings and overall cleaning
-* Start replacing mdanalysis with another PDB parser
-    * its overhead can be avoided if just simple PDB parsing is required.
-        * keep using MDAnalysis for trajectory files, as well as fallback for other molecular formats.
-    * remove the dependency to `gridData` in `grid_io.py`
-        * use the [mrcfile](https://mrcfile.readthedocs.io/en/stable/) library directly for handling MRC/CCP4 files.
-        * DX parser (read) could be manually implemented.
+* use MDAnalysis as fallback for other molecular formats.
+* remove the dependency to `gridData` in `grid_io.py`
+    * use the [mrcfile](https://mrcfile.readthedocs.io/en/stable/) library directly for handling MRC/CCP4 files.
+    * DX parser (read) could be manually implemented.
 * refactor some of the inheritance in SMIF classes (specially for HBonds).
 * further improve the calls to `AppMain.load_configs`?
 
@@ -26,6 +24,7 @@
 
 <!-- ----------------------------------------------------------------------- -->
 ## SMIFFER
+* use molsimple to filter out altlocs.
 * validate the INI headers when parsing a user's provided chem table
 * RNDS trimming could be removed. instead of it, a post-processing with a similar (and probably better) effect could be done with SMIF segmentation.
 * change the ligand example to one that uses both HBACCEPTORS, HBDONORS and NAMES_HBD_FIXED

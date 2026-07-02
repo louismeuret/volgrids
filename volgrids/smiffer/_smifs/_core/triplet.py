@@ -66,19 +66,6 @@ class Triplet:
         self.pos_tail = (cog_0 + cog_1) / 2 if (cog_0 is not None and cog_1 is not None) else None
 
 
-    # ------------------------------------------------------------------------------
-    def get_interactor_bonded_hydrogens(self, atoms) -> tuple:
-        #### [WIP] 06) needs some additional handling related to the concept of bonds
-        sel_atoms = atoms.select_atoms(f"name {self.interactor}") # [TODO] remove MDA
-        if len(sel_atoms) == 0:
-            return []
-        bonded_atoms = [
-            (bond.atoms[0] if bond.atoms[0].name != self.interactor else bond.atoms[1])
-            for bond in sel_atoms.bonds
-        ]
-        return tuple(filter(lambda a: a.type == 'H', bonded_atoms))
-
-
     # --------------------------------------------------------------------------
     def get_direction_vector(self):
         if (self.pos_tail is None) or (self.pos_head is None):

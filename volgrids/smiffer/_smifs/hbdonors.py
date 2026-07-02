@@ -1,13 +1,18 @@
 import warnings
+import numpy as np
 
 import volgrids as vg
 import volgrids.smiffer as smf
+import volgrids._vendors.molsimple as ms
 
 from ._core.hbonds import SmifHBonds
 from ._core.triplet import Triplet
 
 # //////////////////////////////////////////////////////////////////////////////
 class SmifHBDonors(SmifHBonds):
+    MAX_BOND_DISTANCE = 1.5 # (Angstroms) maximum distance between donor and hydrogen to be considered bonded
+
+    # --------------------------------------------------------------------------
     def __init__(self, mm: "smf.MoleculeManager"):
         super().__init__(mm)
         self.hbond_getter = smf.ParserChemTable.get_names_hbd
@@ -19,6 +24,12 @@ class SmifHBDonors(SmifHBonds):
             radius = vg.CFG.param_hbd_fixed_dist_mu + vg.CFG.misc_kernel_gaussian_sigmas * vg.CFG.param_hbd_fixed_dist_sigma,
             deltas = self.mm.get_deltas(), dtype = vg.FLOAT_DTYPE, params = smf.PARAMS_HBD_FIXED
         )
+
+        hydrogens = self.mm.atoms_all.select_non_water().select_hydrogens()
+        if len(hydrogens) == 0:
+            vg.CFG.smif_use_hydrogens = False
+
+        self.bonds_to_h: dict[ms.Particle, ms.ParticleGroup] = self._attempt_to_guess_bonds(hydrogens)
 
 
     # --------------------------------------------------------------------------
@@ -67,16 +78,17 @@ class SmifHBDonors(SmifHBonds):
 
     # --------------------------------------------------------------------------
     def _iter_triplets(self):
-        if vg.CFG.smif_use_hydrogens:
-            self._attempt_to_guess_bonds()
-
         for triplet in super()._iter_triplets():
             if triplet.interactor in self.processed_interactors: continue
 
             if vg.CFG.smif_use_hydrogens:
-                for hydrogen in triplet.get_interactor_bonded_hydrogens(triplet.residue_this):
+                lst_atom_interactor = triplet.residue_this.select_name(triplet.interactor)
+                if not lst_atom_interactor: continue
+                atom_interactor = lst_atom_interactor[0] # the list should contain only one element, unless repeated atom names are present in the same residue
+
+                for atom_h in self.bonds_to_h[atom_interactor]:
                     triplet.pos_tail = triplet.pos_interactor
-                    triplet.pos_head = hydrogen.position
+                    triplet.pos_head = atom_h.get_position_numpy()
                     self.kernel = self._kernel_hbd_fixed
                     self.processed_interactors.add(triplet.interactor)
                     yield triplet
@@ -92,26 +104,18 @@ class SmifHBDonors(SmifHBonds):
 
 
     # --------------------------------------------------------------------------
-    def _attempt_to_guess_bonds(self):
-        import MDAnalysis as mda
+    def _attempt_to_guess_bonds(self, hydrogens: ms.ParticleGroup) -> list[ms.ParticleGroup]:
+        if not vg.CFG.smif_use_hydrogens: return []
 
-        ### [TODO] remove MDA dependency (it should make this method simpler too)
-        # hydrogens = self.mm.get_hydrogens()
-        hydrogens = self.mm.atoms_all.select_hydrogens()
-        if len(hydrogens) == 0:
-            vg.CFG.smif_use_hydrogens = False
-            return
+        coords_heavy = self.atoms.get_positions_numpy()
+        coords_hydro = hydrogens.get_positions_numpy()
+        mat_bonds = np.linalg.norm(
+            coords_heavy[:, np.newaxis, :] - coords_hydro[np.newaxis, :, :],
+            axis = 2
+        ) < self.MAX_BOND_DISTANCE
 
-        try:
-            u = mda.Merge(self.atoms, hydrogens) # temporary universe that excludes any unwanted atoms (like ions with undefined vdw radii)...
-            u.guess_TopologyAttrs(to_guess = ["bonds"]) # ... so that there are no problems with the bond guessing
-        except (ValueError, AttributeError):
-            warnings.warn("MDAnalysis could not guess bonds for hydrogens. Falling back to non-hydrogen model for H-bond donors.")
-            vg.CFG.smif_use_hydrogens = False
-            return
-
-        ### the bonds are contained in these newly defined atomgroup, so update the atoms reference
-        self.atoms = u.atoms
+        # return [hydrogens.select_mask(row) for row in mat_bonds]
+        return {atom: hydrogens.select_mask(row) for atom,row in zip(self.atoms, mat_bonds)}
 
 
 # //////////////////////////////////////////////////////////////////////////////
