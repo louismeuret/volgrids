@@ -22,20 +22,19 @@ class SmifHBAccepts(SmifHBonds):
 
     # --------------------------------------------------------------------------
     def find_tail_head_positions(self, triplet: Triplet) -> None:
-        triplet.set_pos_head(self.res_atoms)
+        triplet.set_pos_head()
 
         ############################### TAIL POSITION
         ### special cases for RNA
         if smf.ResnameStandard.is_nucleic(triplet.resname):
             if triplet.interactor == "O3'": # tail points are in different residues
                 triplet.set_pos_tail_custom(
-                    atoms = self.all_atoms,
-                    query_t0 = triplet.str_this_res,
-                    query_t1 = triplet.str_next_res
+                    triplet.residue_this,
+                    triplet.residue_next,
                 )
                 return
 
-        triplet.set_pos_tail(self.res_atoms)
+        triplet.set_pos_tail()
 
 
 # //////////////////////////////////////////////////////////////////////////////
