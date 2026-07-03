@@ -1,14 +1,13 @@
 import volgrids as vg
-import volgrids.smiffer as sm
-import volgrids.smutils as su
+import volgrids.smiffer as smf
 
 # //////////////////////////////////////////////////////////////////////////////
-class OgHydrophobic(sm.SmifHydrophobic):
+class OgHydrophobic(smf.SmifHydrophobic):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.kernel = vg.KernelSphere(
             radius = vg.CFG.og_hphob_radius,
-            deltas = self.ms.get_deltas(),
+            deltas = self.mm.get_deltas(),
             dtype = vg.FLOAT_DTYPE
         )
 
@@ -19,7 +18,7 @@ class OgHydrophobic(sm.SmifHydrophobic):
         for atom, logp_value in self.iter_particles():
             ### [TODO] check this
             if logp_value <= 0: continue  # Only hydrophobic atoms
-            self.kernel.stamp(grid, atom.position)
+            self.kernel.stamp(grid, atom.get_position_numpy())
 
 
 # //////////////////////////////////////////////////////////////////////////////

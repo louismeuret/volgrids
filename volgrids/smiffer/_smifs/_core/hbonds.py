@@ -1,20 +1,20 @@
 from abc import ABC, abstractmethod
 
 import volgrids as vg
-import volgrids.smiffer as sm
+import volgrids.smiffer as smf
 
 from .triplet import Triplet
 from .smif import Smif
 
 # //////////////////////////////////////////////////////////////////////////////
 class SmifHBonds(Smif, ABC):
-    def __init__(self, ms: "sm.MolSystem"):
-        super().__init__(ms)
+    def __init__(self, mm: "smf.MoleculeManager"):
+        super().__init__(mm)
         self.kernel: vg.KernelGaussianBivariateAngleDist = None
         self.hbond_getter: callable
-        self.all_atoms = self.ms.get_relevant_queried_atoms()
-        self.res_atoms = None
-        self.processed_interactors = set()
+        self.atoms = self.mm.get_atoms_insphere()
+        self.chains = self.atoms.split_chains()
+        self.processed_interactors: set[str] = set()
 
 
     # --------------------------------------------------------------------------
@@ -51,31 +51,28 @@ class SmifHBonds(Smif, ABC):
 
     # --------------------------------------------------------------------------
     def _iter_triplets(self):
-        for res in self.all_atoms.residues:
-            hbond_tuples = self.hbond_getter(self.ms.chemtable, res.resname)
-            if hbond_tuples is None: continue # skip weird residues
+        for chain in self.chains:
+            residues = chain.split_residues()
 
-            self.processed_interactors.clear()
+            for i,res in enumerate(residues):
+                resname = res[0].resname
+                triplets: list[Triplet]|None = self.hbond_getter(self.mm.chemtable, resname)
+                if triplets is None: continue # skip weird residues
 
-            for hbond_tuple in hbond_tuples:
-                if not hbond_tuple: continue  # skip residues without HBond pairs
+                self.processed_interactors.clear()
 
-                triplet = Triplet(res, *hbond_tuple)
-                if not self.can_be_interactor(triplet): continue
+                for triplet in triplets:
+                    res_prev = residues[i-1] if i > 0 else None
+                    res_next = residues[i+1] if i < len(residues)-1 else None
+                    triplet.resname = resname
+                    triplet.residue_prev = res_prev
+                    triplet.residue_this = res
+                    triplet.residue_next = res_next
 
-                self.res_atoms = self.all_atoms.select_atoms(triplet.str_this_res)
-                triplet.set_pos_interactor(self.res_atoms)
-                yield triplet
+                    if not self.can_be_interactor(triplet): continue
 
-
-    # ------------------------------------------------------------------------------
-    def _has_prev_res(self, triplet: Triplet) -> bool:
-        return len(self.all_atoms.select_atoms(triplet.str_prev_res)) > 0
-
-
-    # ------------------------------------------------------------------------------
-    def _has_next_res(self, triplet: Triplet) -> bool:
-        return len(self.all_atoms.select_atoms(triplet.str_next_res)) > 0
+                    triplet.set_pos_interactor()
+                    yield triplet
 
 
 # //////////////////////////////////////////////////////////////////////////////

@@ -3,7 +3,6 @@ from pathlib import Path
 from collections import deque
 
 import volgrids as vg
-import volgrids.smutils as su
 
 # //////////////////////////////////////////////////////////////////////////////
 class ChemTableLigand:
@@ -48,8 +47,8 @@ class ChemTableLigand:
         rings = self.find_flat_rings()
         resname = self.atoms[0].resname
         chemtable = '\n'.join((
-            "[SELECTION_QUERY]",
-            f"resname {resname}", "",
+            "[RESIDUE_NAMES]",
+            resname, "",
             "[STACKING]",
             ### separate the cycles with extra spaces for readability
             f"{resname}: {'   '.join('-'.join(self.atoms[ring].names) for ring in rings)}",

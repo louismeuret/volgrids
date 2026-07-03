@@ -3,12 +3,15 @@
 !def _smif_mode
     !fyh:path_in
         File path to a molecular structure e.g. a PDB file.
+        In the case of PDB files, only the first model is considered and atoms with altlocs different than A (or empty) are discarded.
+        Other formats supported by MDAnalysis can also be provided (requires MDAnalysis).
     !fyh:folder_out
         Folder path where the output grids should be stored.
         If not provided, the parent folder of the input structure file will be used.
     !fyh:path_traj
         File path to a trajectory file (e.g. XTC) supported by MDAnalysis.
         Activates 'traj' mode: perform the calculations for all the frames and save them as a CMAP-series file.
+        Requires MDAnalysis.
     !fyh:path_apbs
         File path to a cached output of APBS for the respective structure file.
         Prevents the automatic calculation of APBS performed by volgrids' smiffer.
