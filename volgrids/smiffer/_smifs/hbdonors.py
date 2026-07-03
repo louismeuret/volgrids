@@ -28,7 +28,7 @@ class SmifHBDonors(SmifHBonds):
         if len(hydrogens) == 0:
             vg.CFG.smif_use_hydrogens = False
 
-        self.bonds_to_h: dict[ms.Particle, ms.ParticleGroup] = self._attempt_to_guess_bonds(hydrogens)
+        self.bonds_donor_hydrogens: dict[ms.Particle, ms.ParticleGroup] = self._attempt_to_guess_bonds(hydrogens)
 
 
     # --------------------------------------------------------------------------
@@ -85,7 +85,7 @@ class SmifHBDonors(SmifHBonds):
                 if not lst_atom_interactor: continue
                 atom_interactor = lst_atom_interactor[0] # the list should contain only one element, unless repeated atom names are present in the same residue
 
-                for atom_h in self.bonds_to_h[atom_interactor]:
+                for atom_h in self.bonds_donor_hydrogens[atom_interactor]:
                     triplet.pos_tail = triplet.pos_interactor
                     triplet.pos_head = atom_h.get_position_numpy()
                     self.kernel = self._kernel_hbd_fixed
@@ -103,7 +103,7 @@ class SmifHBDonors(SmifHBonds):
 
 
     # --------------------------------------------------------------------------
-    def _attempt_to_guess_bonds(self, hydrogens: ms.ParticleGroup) -> list[ms.ParticleGroup]:
+    def _attempt_to_guess_bonds(self, hydrogens: ms.ParticleGroup) -> dict[ms.Particle, ms.ParticleGroup]:
         if not vg.CFG.smif_use_hydrogens: return []
 
         coords_heavy = self.atoms.get_positions_numpy()
@@ -113,7 +113,6 @@ class SmifHBDonors(SmifHBonds):
             axis = 2
         ) < self.MAX_BOND_DISTANCE
 
-        # return [hydrogens.select_mask(row) for row in mat_bonds]
         return {atom: hydrogens.select_mask(row) for atom,row in zip(self.atoms, mat_bonds)}
 
 

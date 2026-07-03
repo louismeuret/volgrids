@@ -21,6 +21,11 @@ class AppOccupancy(smf.AppSmiffer):
             path_out, key_out = self.paths_out["hphob"], self.keys_out["hphob"]
             smf.Smif.save_data(self.grid_smif, self.mm, path_out, key_out)
 
+        if vg.CFG.smif_hphil:
+            sut.OgHydrophilic(self.mm).populate_grid(self.grid_smif)
+            path_out, key_out = self.paths_out["hphil"], self.keys_out["hphil"]
+            smf.Smif.save_data(self.grid_smif, self.mm, path_out, key_out)
+
         if vg.CFG.smif_hba:
             sut.OgHBAccepts(self.mm).populate_grid(self.grid_smif)
             path_out, key_out = self.paths_out["hba"], self.keys_out["hba"]
