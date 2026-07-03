@@ -16,7 +16,7 @@ class OgStacking(smf.SmifStacking):
         grid.reset()
         for atoms_plane in self.iter_particles():
             for atom in atoms_plane:
-                self.kernel.stamp(grid, atom.position)
+                self.kernel.stamp(grid, atom.get_position_numpy())
 
 
 # //////////////////////////////////////////////////////////////////////////////

@@ -18,7 +18,7 @@ class OgHydrophobic(smf.SmifHydrophobic):
         for atom, logp_value in self.iter_particles():
             ### [TODO] check this
             if logp_value <= 0: continue  # Only hydrophobic atoms
-            self.kernel.stamp(grid, atom.position)
+            self.kernel.stamp(grid, atom.get_position_numpy())
 
 
 # //////////////////////////////////////////////////////////////////////////////
