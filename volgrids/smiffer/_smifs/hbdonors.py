@@ -14,7 +14,6 @@ class SmifHBDonors(SmifHBonds):
     # --------------------------------------------------------------------------
     def __init__(self, mm: "smf.MoleculeManager"):
         super().__init__(mm)
-        self.hbond_getter = smf.ParserChemTable.get_names_hbd
         self._kernel_hbd_free = vg.KernelGaussianBivariateAngleDist(
             radius = vg.CFG.param_hbd_free_dist_mu + vg.CFG.misc_kernel_gaussian_sigmas * vg.CFG.param_hbd_free_dist_sigma,
             deltas = self.mm.get_deltas(), dtype = vg.FLOAT_DTYPE, params = smf.PARAMS_HBD_FREE
@@ -23,6 +22,7 @@ class SmifHBDonors(SmifHBonds):
             radius = vg.CFG.param_hbd_fixed_dist_mu + vg.CFG.misc_kernel_gaussian_sigmas * vg.CFG.param_hbd_fixed_dist_sigma,
             deltas = self.mm.get_deltas(), dtype = vg.FLOAT_DTYPE, params = smf.PARAMS_HBD_FIXED
         )
+        self.dict_triplets = mm.chemtable.names_hbd
 
         hydrogens = self.mm.atoms_all.select_non_water().select_hydrogens()
         if len(hydrogens) == 0:

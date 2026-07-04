@@ -10,7 +10,7 @@ class OgHBAccepts(smf._smifs_core.SmifHBonds):
             deltas = self.mm.get_deltas(),
             dtype = vg.FLOAT_DTYPE
         )
-        self.hbond_getter = smf.ParserChemTable.get_names_hba
+        self.dict_triplets = self.mm.chemtable.names_hba
 
     # --------------------------------------------------------------------------
     def can_be_interactor(self, triplet) -> bool:

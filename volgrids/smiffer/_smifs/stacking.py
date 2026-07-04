@@ -27,7 +27,7 @@ class SmifStacking(smf.Smif):
 
         for residue in residues:
             resname = residue[0].resname.upper()
-            lst_names_planes = self.mm.chemtable.get_names_stacking(resname)
+            lst_names_planes = self.mm.chemtable.names_stk.get(resname)
 
             if lst_names_planes is None: continue
             for names_plane in lst_names_planes:

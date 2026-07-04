@@ -11,7 +11,7 @@ class SmifHBonds(Smif, ABC):
     def __init__(self, mm: "smf.MoleculeManager"):
         super().__init__(mm)
         self.kernel: vg.KernelGaussianBivariateAngleDist = None
-        self.hbond_getter: callable
+        self.dict_triplets: dict[str, list[Triplet]] = {}
         self.atoms = self.mm.get_atoms_insphere()
         self.chains = self.atoms.split_chains()
         self.processed_interactors: set[str] = set()
@@ -56,7 +56,7 @@ class SmifHBonds(Smif, ABC):
 
             for i,res in enumerate(residues):
                 resname = res[0].resname
-                triplets: list[Triplet]|None = self.hbond_getter(self.mm.chemtable, resname)
+                triplets: list[Triplet]|None = self.dict_triplets.get(resname)
                 if triplets is None: continue # skip weird residues
 
                 self.processed_interactors.clear()

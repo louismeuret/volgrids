@@ -1,17 +1,19 @@
+from pathlib import Path
+
 import volgrids as vg
 import volgrids._vendors.molsimple as ms
 import volgrids.smiffer as smf
 
 # //////////////////////////////////////////////////////////////////////////////
 class ParserChemTable:
-    def __init__(self, path_table):
+    def __init__(self, path_table: Path):
         self.resnames: list[str] = []
-        self._parser_ini = vg.ParserIni.from_file(path_table)
+        self.names_stk: dict[str, list[str]] = {}
+        self.names_hba: dict[str, list[smf._smifs_core.Triplet]] = {}
+        self.names_hbd: dict[str, list[smf._smifs_core.Triplet]] = {}
+
         self._atoms_hphob: dict[str, dict[str, float]] = {}
-        self._names_stk: dict[str, list[str]] = {}
-        self._names_hba: dict[str, list[smf._smifs_core.Triplet]] = {}
-        self._names_hbd: dict[str, list[smf._smifs_core.Triplet]] = {}
-        self._parse_table()
+        self._parse_table(path_table)
 
 
     # --------------------------------------------------------------------------
@@ -22,22 +24,7 @@ class ParserChemTable:
 
 
     # --------------------------------------------------------------------------
-    def get_names_stacking(self, resname: str) -> list[str] | None:
-        return self._names_stk.get(resname)
-
-
-    # --------------------------------------------------------------------------
-    def get_names_hba(self, resname: str) -> list[smf._smifs_core.Triplet] | None:
-        return self._names_hba.get(resname)
-
-
-    # --------------------------------------------------------------------------
-    def get_names_hbd(self, resname: str) -> list[smf._smifs_core.Triplet] | None:
-        return self._names_hbd.get(resname)
-
-
-    # --------------------------------------------------------------------------
-    def parse_atom_hphobicity(self, data_ini: vg.ParserIni):
+    def parse_atoms_hphobicity(self, data_ini: vg.ParserIni) -> None:
         for resname, str_groups in data_ini.iter_splitted_lines("HYDROPHOBICITY", sep = ':'):
             self._atoms_hphob[resname] = {}
             for group in str_groups.split():
@@ -49,54 +36,55 @@ class ParserChemTable:
 
 
     # --------------------------------------------------------------------------
-    def parse_names_stacking(self, data_ini: vg.ParserIni):
+    def parse_names_stacking(self, data_ini: vg.ParserIni) -> None:
         for resname, str_cycles in data_ini.iter_splitted_lines("STACKING", sep = ':'):
-            self._names_stk[resname] = [
+            self.names_stk[resname] = [
                 cycle.replace('-', ' ') for cycle in str_cycles.split()
             ]
 
 
     # --------------------------------------------------------------------------
-    def parse_names_hbacceptors(self, data_ini: vg.ParserIni):
+    def parse_names_hbacceptors(self, data_ini: vg.ParserIni) -> None:
         for resname, str_triplets in data_ini.iter_splitted_lines("HBACCEPTORS", sep = ':'):
             triplets = list(map(self._parse_atoms_triplet, str_triplets.split()))
-            self._names_hba[resname] = triplets
+            self.names_hba[resname] = triplets
 
 
     # --------------------------------------------------------------------------
-    def parse_names_hbdonors(self, data_ini: vg.ParserIni):
+    def parse_names_hbdonors(self, data_ini: vg.ParserIni) -> None:
         for resname, str_triplets in data_ini.iter_splitted_lines("HBDONORS", sep = ':'):
             triplets = list(map(self._parse_atoms_triplet, str_triplets.split()))
-            self._names_hbd[resname] = triplets
+            self.names_hbd[resname] = triplets
 
 
     # --------------------------------------------------------------------------
-    def _parse_table(self):
+    def _parse_table(self, path_table: Path) -> None:
         """
         Populate the fields of the ParserChemTable instance by parsing the lines of the .chem table file.
         Should only be called once during initialization.
         """
 
-        ### extract values from the lines
-        lst_resnames = self._parser_ini.get("RESIDUE_NAMES")
-        if lst_resnames is None: raise ValueError("No selection query found in the table file.")
+        parser = vg.ParserIni.from_file(path_table)
+
+        lst_resnames = parser.get("RESIDUE_NAMES")
+        if not lst_resnames: raise ValueError("No selection query found in the table file.")
         self.resnames = lst_resnames[0].split()
 
-        self.parse_atom_hphobicity  (self._parser_ini)
-        self.parse_names_stacking   (self._parser_ini)
-        self.parse_names_hbacceptors(self._parser_ini)
-        self.parse_names_hbdonors   (self._parser_ini)
+        self.parse_atoms_hphobicity (parser)
+        self.parse_names_stacking   (parser)
+        self.parse_names_hbacceptors(parser)
+        self.parse_names_hbdonors   (parser)
 
 
     # --------------------------------------------------------------------------
     @staticmethod
-    def _parse_atoms_triplet(triplet: str) -> smf._smifs_core.Triplet:
+    def _parse_atoms_triplet(str_triplet: str) -> smf._smifs_core.Triplet:
         def _assert(condition: bool):
             assert condition, \
-                f"Triplet '{triplet}' is not in the expected formats 'I=T->H' or 'I=T0.T1->H'."
+                f"Triplet '{str_triplet}' is not in the expected formats 'I=T->H' or 'I=T0.T1->H'."
 
-        stripped = triplet.strip('!')
-        hbond_fixed = stripped != triplet
+        stripped = str_triplet.strip('!')
+        hbond_fixed = stripped != str_triplet
 
         parts = stripped.split('=')
         _assert(len(parts) == 2)
