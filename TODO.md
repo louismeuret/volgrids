@@ -11,7 +11,7 @@
 
 
 <!-- ----------------------------------------------------------------------- -->
-## VolGrids
+## VOLGRIDS
 * replace `OUT_WARNING_NPOINTS` with a better alternative.
 * generalize the usage of the `-c` flag (for customizing configurations) in all modes.
 * implement: raise an error if a format file is opened with the wrong function

@@ -1,1 +1,1 @@
-These are some example scripts that use VolGrids as a package
+These are some example scripts that use volgrids as a package
