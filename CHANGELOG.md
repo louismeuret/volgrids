@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.0.0] - 2026-07-07
+- Major refactorings for the code implementations.
+    - `smiffer`
+        - Renamed `MolSystem` to `MoleculeManager` for better clarity of its purpose.
+        - Replaced MDAnalysis as main pdb parser, using the new vendor `molsimple` instead.
+            - `molsimple` ensures that atoms with repeated positions (i.e. altlocs) are now removed (only the altloc A is kept).
+                - It also considers only the first model of a PDB file.
+            - `MDAnalysis` is still kept for some uses:
+                - As a fallback when reading structure files different than PDB.
+                - Used for anything related with trajectories.
+                - Some other utilities still use it.
+        - (chemtable) replaced `SELECTION_QUERY` with `RESIDUE_NAMES`.
+            - Instead of an arbitrary MDA query,  the chemtables now will specify just the residues that are to be selected.
+    - Several other cleanups in the code.
+- Added hydrophilic occupancy grid.
+- Fixed a bug that was present since at least version `0.12.0` (probably even earlier) where hydrogen bond donors were being processed twice when generating their SMIFs.
+- Some adjustments in the boolean kernels.
+
+- There are no more large refactorings expected for the UI (i.e. CLI, configs and chemtables), so this version will mark the beginning of `1.0.0`.
+    - There is still plenty of work to do, including cleaning up parts of the code, fixing potential bugs, documenting/adding tests, considering new features...
+    - There might still be some internal refactorings when cleaning up / adding features, so watch out for any new release of a new `1.x.0`.
+
+
 ## [0.20.1] - 2026-06-30
 - Fixed bug when dividing a grid by an integer.
 
@@ -369,10 +392,10 @@
 ## [0.3.0] - 2026-01-15
 - Fixed compatibility issue with Python 3.14.
 - Added `GridIO.write_auto` method for generic output operations (format infered from path's suffix).
-- Package requirements are now automatically checked/installed when installing VolGrids with PIP.
-- Changed the way VolGrids should be run from the root directory of VolGrid's repo (when not installed). Instead of having separate entry scripts for every "application" (e.g. `smiffer.py`, `vgtools.py`...), these can be accessed by running `python3 volgrids` followed by the application name as an argument. For example, `python3 volgrids smiffer`.
-- Similarly, if VolGrids is installed as a package, it can be called as an independent command from anywere. The previous example would correspond to `volgrids smiffer` instead.
-- Added an **apbs** app to VolGrids. It intends to simplify the process of running APBS on structures without having to worry about intermediary files. Run by `volgrids apbs`.
+- Package requirements are now automatically checked/installed when installing volgrids with PIP.
+- Changed the way volgrids should be run from the root directory of VolGrid's repo (when not installed). Instead of having separate entry scripts for every "application" (e.g. `smiffer.py`, `vgtools.py`...), these can be accessed by running `python3 volgrids` followed by the application name as an argument. For example, `python3 volgrids smiffer`.
+- Similarly, if volgrids is installed as a package, it can be called as an independent command from anywere. The previous example would correspond to `volgrids smiffer` instead.
+- Added an **apbs** app to volgrids. It intends to simplify the process of running APBS on structures without having to worry about intermediary files. Run by `volgrids apbs`.
 - Changed the behavior of the `-a` flag for `smiffer`. Once again, it's only valid if an APBS output files follows; in such a case, than this file is used to generate the electrostatic SMIF. If the flag is not used, the application falls back to automatically calculating the APBS output as a temporary file.
 
 

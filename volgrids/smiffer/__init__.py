@@ -40,7 +40,7 @@ PARAMS_HBD_FREE:  _vg.ParamsGaussianBivariate
 PARAMS_HBD_FIXED: _vg.ParamsGaussianBivariate
 PARAMS_HPHOB:     _vg.ParamsGaussianUnivariate
 PARAMS_HPHIL:     _vg.ParamsGaussianUnivariate
-PARAMS_STACK:     _vg.ParamsGaussianBivariate
+PARAMS_STK:       _vg.ParamsGaussianBivariate
 SIGMA_DIST_STACKING: float
 
 APBS_ELAPSED_TIME: float = 0.0

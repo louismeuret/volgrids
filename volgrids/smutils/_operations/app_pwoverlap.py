@@ -47,7 +47,7 @@ class AppPwOverlap(vg.AppSubcommand):
                 centered_cogs_dst, dists, normal_src, is_stacking = True
             )
             arr_dst += vg.Math.bivariate_gaussian(
-                input_mat, smf.PARAMS_STACK.mu, smf.PARAMS_STACK.cov_inv
+                input_mat, smf.PARAMS_STK.mu, smf.PARAMS_STK.cov_inv
             ) * vg.CFG.param_stk_scale
 
 

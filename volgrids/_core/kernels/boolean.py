@@ -6,8 +6,8 @@ import volgrids as vg
 class KernelSphere(vg.Kernel):
     """For generating simple boolean spheres (e.g. for masks)"""
     def __init__(self,
-        radius, deltas, dtype,
-        kop: vg.KOperation = vg.KOperation.OR
+        radius, deltas,
+        dtype = bool, kop: vg.KOperation = vg.KOperation.OR,
     ):
         super().__init__(radius, deltas, dtype, kop)
         self.arr[self.dists < radius] = 1
@@ -15,39 +15,22 @@ class KernelSphere(vg.Kernel):
 
 # //////////////////////////////////////////////////////////////////////////////
 class KernelCylinder(vg.Kernel):
-    """For generating boolean cylinders"""
+    """For generating boolean cylinders, disks and rings"""
     def __init__(self,
-        radius, vdirection, width, deltas, dtype,
-        kop: vg.KOperation = vg.KOperation.OR
+        radius, deltas, vnormal: np.ndarray,
+        width_inner: float, width_outer: float, height: float,
+        dtype = bool, kop: vg.KOperation = vg.KOperation.OR,
     ):
         super().__init__(radius, deltas, dtype, kop)
-        w = vg.Math.get_projection_height(self.coords, vdirection)
-        self.arr[w < width] = 1
+        self.arr.fill(1)
 
+        w = vg.Math.get_projection_height(self.coords, vnormal)
+        mask_cylinder = (w < width_inner) | (w > width_outer)
 
-# //////////////////////////////////////////////////////////////////////////////
-class KernelDisk(KernelSphere):
-    """For generating boolean disks"""
-    def __init__(self,
-        radius, vnormal, height, deltas, dtype,
-        kop: vg.KOperation = vg.KOperation.OR
-    ):
-        super().__init__(radius, deltas, dtype, kop)
         projection = vg.Math.get_projection(self.coords, vnormal)
-        projection = np.abs(projection)
-        self.arr[projection >= height] = 0
+        mask_disk =  np.abs(projection) > height
 
-
-# //////////////////////////////////////////////////////////////////////////////
-class KernelDiskConecut(KernelDisk):
-    """For generating boolean disks with a cone cut"""
-    def __init__(self,
-        radius, vnormal, height, vdirection, max_angle, deltas, dtype,
-        kop: vg.KOperation = vg.KOperation.OR
-    ):
-        super().__init__(radius, vnormal, height, deltas, dtype, kop)
-        angle = vg.Math.get_angle(self.coords, vdirection, in_degrees = False)
-        self.arr[angle > max_angle/2] = 0
+        self.arr[mask_cylinder | mask_disk] = 0
 
 
 # //////////////////////////////////////////////////////////////////////////////
