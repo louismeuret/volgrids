@@ -3,33 +3,26 @@
 <!-- ----------------------------------------------------------------------- -->
 ## General
 * Add annotations, docstrings and overall cleaning
-* Start replacing mdanalysis with another PDB parser
-    * its overhead can be avoided if just simple PDB parsing is required.
-        * keep using MDAnalysis for trajectory files, as well as fallback for other molecular formats.
-    * remove the dependency to `gridData` in `grid_io.py`
-        * use the [mrcfile](https://mrcfile.readthedocs.io/en/stable/) library directly for handling MRC/CCP4 files.
-        * DX parser (read) could be manually implemented.
+* remove the dependency to `gridData` in `grid_io.py`
+    * use the [mrcfile](https://mrcfile.readthedocs.io/en/stable/) library directly for handling MRC/CCP4 files.
+    * DX parser (read) could be manually implemented.
 * refactor some of the inheritance in SMIF classes (specially for HBonds).
 * further improve the calls to `AppMain.load_configs`?
 
 
 <!-- ----------------------------------------------------------------------- -->
-## VolGrids
+## VOLGRIDS
 * replace `OUT_WARNING_NPOINTS` with a better alternative.
-* generalize the usage of the `-c` flag (for customazing configurations) in all modes.
-* add explanations to the list of configs printed with the empty `-c` flag
+* generalize the usage of the `-c` flag (for customizing configurations) in all modes.
 * implement: raise an error if a format file is opened with the wrong function
 * add tests for parameters being directly passed to the App classes (instead of parsing the CLI arguments)
-* check if the implementation of the OUT_OVERWRITE_OK flag is user-convenient
-* idea: centralize the usage of `mda.Universe` instances into a single wrapper class (MolSystem is already there) and add `delete_traj_locks` in its destructor (will it work?).
+* check if the implementation of the `OUT_OVERWRITE_OK` flag is user-convenient
 * deal somehow with using a wrong comment char inside a config file
 
 
 <!-- ----------------------------------------------------------------------- -->
 ## SMIFFER
 * validate the INI headers when parsing a user's provided chem table
-* there seems to be some previous bugs in trajectory mode; track down and fix.
-* check what happens with structure files with multiple models.
 * RNDS trimming could be removed. instead of it, a post-processing with a similar (and probably better) effect could be done with SMIF segmentation.
 * change the ligand example to one that uses both HBACCEPTORS, HBDONORS and NAMES_HBD_FIXED
 * document the .chem tables
@@ -38,7 +31,7 @@
 * add tests for -r flag
 * add possibility for treshold i.e. removing low value points (treshold of 0.5 already can reduce CMAP sizes by 90%)
 * check whether the trimmer can still be saved when no smifs are calculated.
-* MDAnalysis struggles when parsing certain PQR files.
+* MDAnalysis struggles when parsing certain PQR files e.g. when coordinates are large number so that there is no space in between the columns.
 
 
 <!-- ----------------------------------------------------------------------- -->

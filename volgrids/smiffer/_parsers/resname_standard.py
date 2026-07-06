@@ -1,3 +1,5 @@
+from volgrids._vendors import molsimple as ms
+
 # //////////////////////////////////////////////////////////////////////////////
 class ResnameStandard:
     ### [WIP] add a more comprehensive mapping of aliases
@@ -18,9 +20,14 @@ class ResnameStandard:
 
     # --------------------------------------------------------------------------
     @classmethod
-    def standardize(cls, resname: str) -> str:
-        #### [TODO] could eventually run the standardization once as an initial preprocessing of the PDB contents,
-        #### perhaps when replacing mda as main PDB parser...
+    def standardize_particle_group(cls, atoms: ms.ParticleGroup) -> None:
+        atoms.set_resnames([
+            cls.standardize_resname(resname) for resname in atoms.get_resnames()
+        ])
+
+    # --------------------------------------------------------------------------
+    @classmethod
+    def standardize_resname(cls, resname: str) -> str:
         if cls.is_rna (resname): return cls.ALIASES_RNA [resname]
         if cls.is_dna (resname): return cls.ALIASES_DNA [resname]
         if cls.is_prot(resname): return cls.ALIASES_PROT[resname]

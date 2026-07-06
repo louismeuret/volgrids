@@ -1,11 +1,13 @@
-# Volumetric Grids (VolGrids)
-VolGrids is a framework for volumetric calculations, with emphasis in biological molecular systems. The following applications are provided:
+# Volumetric Grids (VOLGRIDS)
+VOLGRIDS is a framework for volumetric calculations, with emphasis in biological molecular systems. The following applications are provided:
   - **SMIF Calculator** via `volgrids smiffer`. This is the most up-to-date implementation of the [Statistical Molecular Interaction Fields (SMIF)](https://www.biorxiv.org/content/10.1101/2025.04.16.649117v1) method.
   - **Smiffer Utilities**  via `volgrids smutils`. Utilities related to more advanced SMIF usage.
   - **Volgrid Tools** via `volgrids vgtools`. Collection of utilities for analysis or post-processing of generic grids.
   - **APBS** via `volgrids apbs`. Wrapper around [APBS](https://apbs.readthedocs.io/en/latest/). Requires installing [APBS](#installation-ubuntu).
 
 You can read more in the [subcommands summary](#summary-of-subcommands).
+
+![logo](examples/logo/logo.gif)
 
 ## QuickStart
 ```bash
@@ -20,6 +22,9 @@ cd volgrids
 pip install -r requirements.txt
 python3 volgrids --help # required vendors will automatically be downloaded the first time volgrids is run
 ```
+
+### Tutorials
+Check out the [tutorials](https://github.com/louismeuret/Volgrids_Tutorials).
 
 
 <!-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
@@ -74,8 +79,8 @@ pip install mdanalysis h5py
 
 <!-- ----------------------------------------------------------------------- -->
 ## Running the CLI utilities
-### Without VolGrids installed
-You can use the tools provided by VolGrids without installing it, by calling any of the scripts in the root directory of this repository (it doesn't have to be the current directory, you can call them from anywhere). Leave `[options...]` empty to read more about the available options.
+### Without volgrids installed
+You can use the tools provided by volgrids without installing it, by calling any of the scripts in the root directory of this repository (it doesn't have to be the current directory, you can call them from anywhere). Leave `[options...]` empty to read more about the available options.
 
 ```bash
 python3 volgrids apbs    [options...]
@@ -85,8 +90,8 @@ python3 volgrids vgtools [options...]
 ```
 
 <!-- ----------------------------------------------------------------------- -->
-### VolGrids installed
-- VolGrids can be installed as a package via pip:
+### With volgrids installed
+- volgrids can be installed as a package via pip:
 ```bash
 pip install volgrids
 ```

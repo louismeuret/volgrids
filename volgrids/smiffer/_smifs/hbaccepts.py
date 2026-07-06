@@ -1,18 +1,18 @@
 import volgrids as vg
-import volgrids.smiffer as sm
+import volgrids.smiffer as smf
 
 from ._core.hbonds import SmifHBonds
 from ._core.triplet import Triplet
 
 # //////////////////////////////////////////////////////////////////////////////
 class SmifHBAccepts(SmifHBonds):
-    def __init__(self, ms: "sm.MolSystem"):
-        super().__init__(ms)
+    def __init__(self, mm: "smf.MoleculeManager"):
+        super().__init__(mm)
         self.kernel = vg.KernelGaussianBivariateAngleDist(
             radius = vg.CFG.param_hba_dist_mu + vg.CFG.misc_kernel_gaussian_sigmas * vg.CFG.param_hba_dist_sigma,
-            deltas = self.ms.get_deltas(), dtype = vg.FLOAT_DTYPE, params = sm.PARAMS_HBA
+            deltas = self.mm.get_deltas(), dtype = vg.FLOAT_DTYPE, params = smf.PARAMS_HBA
         )
-        self.hbond_getter = sm.ParserChemTable.get_names_hba
+        self.dict_triplets = mm.chemtable.names_hba
 
 
     # --------------------------------------------------------------------------
@@ -22,20 +22,19 @@ class SmifHBAccepts(SmifHBonds):
 
     # --------------------------------------------------------------------------
     def find_tail_head_positions(self, triplet: Triplet) -> None:
-        triplet.set_pos_head(self.res_atoms)
+        triplet.set_pos_head()
 
         ############################### TAIL POSITION
         ### special cases for RNA
-        if sm.ResnameStandard.is_nucleic(triplet.resname):
+        if smf.ResnameStandard.is_nucleic(triplet.resname):
             if triplet.interactor == "O3'": # tail points are in different residues
                 triplet.set_pos_tail_custom(
-                    atoms = self.all_atoms,
-                    query_t0 = triplet.str_this_res,
-                    query_t1 = triplet.str_next_res
+                    triplet.residue_this,
+                    triplet.residue_next,
                 )
                 return
 
-        triplet.set_pos_tail(self.res_atoms)
+        triplet.set_pos_tail()
 
 
 # //////////////////////////////////////////////////////////////////////////////

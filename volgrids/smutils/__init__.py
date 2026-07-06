@@ -1,7 +1,9 @@
 from ._occupancies.hbaccepts import OgHBAccepts
 from ._occupancies.hbdonors import OgHBDonors
 from ._occupancies.stacking import OgStacking
-from ._occupancies.hydrophobic import OgHydrophobic # [TODO] hydrophilic? electrostatic?
+from ._occupancies.hydrophobic import OgHydrophobic
+from ._occupancies.hydrophilic import OgHydrophilic
+# [TODO] OG electrostatic?
 
 from ._operations.app_occupancy import AppOccupancy
 from ._operations.app_pwoverlap import AppPwOverlap

@@ -2,11 +2,11 @@ import volgrids as vg
 import volgrids.smiffer as smf
 
 # //////////////////////////////////////////////////////////////////////////////
-class OgHydrophobic(smf.SmifHydrophobic):
+class OgHydrophilic(smf.SmifHydrophilic):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.kernel = vg.KernelSphere(
-            radius = vg.CFG.og_hphob_radius,
+            radius = vg.CFG.og_hphil_radius,
             deltas = self.mm.get_deltas(),
             dtype = vg.FLOAT_DTYPE
         )
@@ -16,7 +16,7 @@ class OgHydrophobic(smf.SmifHydrophobic):
         """Populate grid with spherical accessibility regions."""
         grid.reset()
         for atom, logp_value in self.iter_particles():
-            if logp_value < 0: continue
+            if logp_value > 0: continue
             self.kernel.stamp(grid, atom.get_position_numpy())
 
 

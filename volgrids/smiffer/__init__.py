@@ -1,10 +1,7 @@
-from ._core.mol_system import MolSystem
+from ._core.molecule_manager import MoleculeManager
 from ._core.traj_multiprocess import TrajMultiprocess
 from ._core.cavity_finder import CavityFinder
 from ._core.trimmer import Trimmer
-
-from ._parsers.resname_standard import ResnameStandard
-from ._parsers.parser_chem_table import ParserChemTable
 
 from ._smifs import _core as _smifs_core
 from ._smifs._core import Smif
@@ -14,6 +11,9 @@ from ._smifs.hbdonors import SmifHBDonors
 from ._smifs.hydrophilic import SmifHydrophilic
 from ._smifs.hydrophobic import SmifHydrophobic
 from ._smifs.stacking import SmifStacking
+
+from ._parsers.resname_standard import ResnameStandard
+from ._parsers.parser_chem_table import ParserChemTable
 
 from .app_smiffer import AppSmiffer
 
@@ -40,7 +40,7 @@ PARAMS_HBD_FREE:  _vg.ParamsGaussianBivariate
 PARAMS_HBD_FIXED: _vg.ParamsGaussianBivariate
 PARAMS_HPHOB:     _vg.ParamsGaussianUnivariate
 PARAMS_HPHIL:     _vg.ParamsGaussianUnivariate
-PARAMS_STACK:     _vg.ParamsGaussianBivariate
+PARAMS_STK:       _vg.ParamsGaussianBivariate
 SIGMA_DIST_STACKING: float
 
 APBS_ELAPSED_TIME: float = 0.0

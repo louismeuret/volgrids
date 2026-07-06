@@ -1,5 +1,4 @@
 import sys
-import warnings
 from pathlib import Path
 
 try:
@@ -18,7 +17,6 @@ def path_default_config() -> Path | None:
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def main():
-    warnings.filterwarnings("ignore", module = "MDAnalysis.*")
     vg.PATH_DEFAULT_CONFIG = path_default_config()
     vg.AppMain(sys.argv).run()
 
