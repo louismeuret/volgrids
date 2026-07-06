@@ -4,8 +4,10 @@ from enum import Enum, auto
 # //////////////////////////////////////////////////////////////////////////////
 class KOperation(Enum):
     ADD = auto()
+    MUL = auto()
     MIN = auto()
     MAX = auto()
+    MASK = auto()
     AND = auto()
     OR  = auto()
     ABS_MAX = auto()
@@ -14,8 +16,10 @@ class KOperation(Enum):
     @classmethod
     def get_np_operation(cls, operation) -> callable:
         if operation == cls.ADD: return np.add
+        if operation == cls.MUL: return np.multiply
         if operation == cls.MIN: return np.minimum
         if operation == cls.MAX: return np.maximum
+        if operation == cls.MASK: return cls._mask
         if operation == cls.AND: return np.logical_and
         if operation == cls.OR:  return np.logical_or
         if operation == cls.ABS_MAX: return cls._abs_max
@@ -29,6 +33,13 @@ class KOperation(Enum):
         abs_b = np.abs(b)
         mask = abs_a >= abs_b
         return np.where(mask, a, b)
+
+
+    # --------------------------------------------------------------------------
+    @classmethod
+    def _mask(cls, a, b):
+        mask = b.astype(bool)
+        return np.where(mask, a, 0)
 
 
 # //////////////////////////////////////////////////////////////////////////////

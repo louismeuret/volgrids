@@ -10,7 +10,7 @@ class SmifStacking(smf.Smif):
         grid.reset()
         kernel = vg.KernelGaussianBivariateAngleDist(
             radius = vg.CFG.param_stk_dist_mu + vg.CFG.misc_kernel_gaussian_sigmas * smf.SIGMA_DIST_STACKING,
-            deltas = self.mm.get_deltas(), dtype = vg.FLOAT_DTYPE, params = smf.PARAMS_STACK
+            deltas = self.mm.get_deltas(), dtype = vg.FLOAT_DTYPE, params = smf.PARAMS_STK
         )
         for atoms_plane in self.iter_particles():
             cog, normal = self.get_cog_normal(atoms_plane)

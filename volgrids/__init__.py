@@ -12,7 +12,7 @@ from ._types.k_operation import KOperation
 
 from ._core.kernels.kernel import Kernel
 from ._core.kernels.boolean import \
-    KernelSphere, KernelCylinder, KernelDisk, KernelDiskConecut
+    KernelSphere, KernelCylinder
 from ._core.kernels.gaussian import \
     KernelGaussianUnivariateDist, KernelGaussianBivariateAngleDist
 

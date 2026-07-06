@@ -97,7 +97,7 @@ class AppSmiffer(vg.AppSubcommand):
             cov_00 = vg.CFG.param_hbd_fixed_angle_sigma**2, cov_01 = 0,
             cov_10 = 0,  cov_11 = vg.CFG.param_hbd_fixed_dist_sigma**2,
         )
-        smf.PARAMS_STACK = vg.ParamsGaussianBivariate(
+        smf.PARAMS_STK = vg.ParamsGaussianBivariate(
             mu_0 = vg.CFG.param_stk_angle_mu, mu_1 = vg.CFG.param_stk_dist_mu,
             cov_00 = vg.CFG.param_stk_cov00, cov_01 = vg.CFG.param_stk_cov01,
             cov_10 = vg.CFG.param_stk_cov10, cov_11 = vg.CFG.param_stk_cov11,
